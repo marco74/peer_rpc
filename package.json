@@ -1,0 +1,40 @@
+{
+  "name": "rpc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "rpc.js",
+  "typescript": {
+    "main": "rpc.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha --reporter spec --require ts-node/register test/*.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chai": "^4.2.11",
+    "@types/mocha": "^7.0.2",
+    "chai": "^4.2.0",
+    "mocha": "^7.1.2",
+    "sinon": "^9.0.2",
+    "ts-node": "^8.10.1",
+    "ts-sinon": "^1.2.0",
+    "typescript": "^3.9.2"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "ts-test-functions": "0.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marco74/peer_rpc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marco74/peer_rpc/issues"
+  },
+  "homepage": "https://github.com/marco74/peer_rpc#readme"
+}
