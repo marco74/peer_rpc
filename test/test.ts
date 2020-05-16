@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import remote_procedure_call from '../src/rpc';
+import remote_procedure_call from '../src/peer_rpc';
 import observer from 'ts-test-functions';
 
 describe("rpc", () => {
