@@ -1,10 +1,10 @@
 {
-  "name": "rpc",
+  "name": "peer_rpc",
   "version": "1.0.0",
   "description": "",
-  "main": "rpc.js",
+  "main": "peer_rpc.js",
   "typescript": {
-    "main": "rpc.ts"
+    "main": "peer_rpc.ts"
   },
   "scripts": {
     "build": "tsc",
