@@ -1,6 +1,6 @@
 {
   "name": "peer_rpc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "peer_rpc.js",
   "typescript": {
