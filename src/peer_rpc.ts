@@ -141,13 +141,24 @@ class remote_procedure_call {
 						instance_id,
 						properties:[]
 					};
-					for (let name in instance) {
+
+					let prop_handler = (name:string) => {
 						let prop = instance[name];
 						let prop_wrapper = (...args:any[]) => prop instanceof Function ? prop(...args) : prop;
 						let wrapper_id = generate_id('xxxxxxxxxx', 36);
 						this.register_function(wrapper_id, prop_wrapper);
 						result.properties.push({name, wrapper_id});
 					}
+
+					Object.keys(instance)
+						.forEach(prop_handler);
+					Object.getOwnPropertyNames(f.prototype)
+						.forEach((name:string) => {
+							if (name != 'constructor') {
+								prop_handler(name);
+							}
+						});
+					
 					return result;
 				});
 		}
@@ -168,7 +179,7 @@ class remote_procedure_call {
 			fname,
 			this.serialize_arguments(args)
 		]))
-			.then(({instance_id, properties}:{instance_id:string; properties:any[]}) => {
+			.then(({properties}:{properties:any[]}) => {
 				return properties.reduce((obj:any, {name, wrapper_id}:{name:string; wrapper_id:string}) => {
 					obj[name] = (...args:any[]) => {
 						return this.call_function(wrapper_id, ...args);
