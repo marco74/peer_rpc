@@ -119,15 +119,7 @@ describe("rpc", () => {
 			return Promise.all([p1, p2])
 				.then(([sum_obj, diff_obj]) => {
 					assert(sum_obj instanceof Object)
-					for (let propname in sum) {
-						assert(propname in sum_obj);
-						assert(sum_obj[propname] instanceof Function);
-					}
 					assert(diff_obj instanceof Object)
-					for (let propname in diff) {
-						assert(propname in diff_obj);
-						assert(diff_obj[propname] instanceof Function);
-					}
 					return Promise.all([
 						sum_obj.exec(2, 1),
 						sum_obj.type(),
