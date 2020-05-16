@@ -1,9 +1,19 @@
 {
 	"compilerOptions": {
-		"target":"es5",
+		"target":"es6",
 		"declaration":true,
-		"module":"commonjs",
-		"outDir":"./dist",
+		"declarationDir": "./dist",
+		"module":"ES2015", //never ever change this!!
+		                   //build process does not work properly with different value
+		"noImplicitAny": true,
+		"outDir":"./tsc-build",
 		"strict":true
-	}
+	},
+	"include": [
+		"src/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
 }
