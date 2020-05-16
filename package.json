@@ -2,33 +2,39 @@
   "name": "peer_rpc",
   "version": "1.0.1",
   "description": "",
-  "main": "peer_rpc.js",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "files": [
+    "dist"
+  ],
+  "types": "dist/index.d.js",
   "typescript": {
     "main": "peer_rpc.ts"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && rollup -c",
     "test": "mocha --reporter spec --require ts-node/register test/*.ts"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Marco Fleckinger <marco.fleckinger@gmail.com",
+  "license": "MIT",
   "devDependencies": {
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
     "chai": "^4.2.0",
     "mocha": "^7.1.2",
+    "rollup": "^2.10.2",
+    "rollup-plugin-typescript2": "^0.27.1",
     "sinon": "^9.0.2",
     "ts-node": "^8.10.1",
     "ts-sinon": "^1.2.0",
+    "ts-test-functions": "0.0.6",
     "typescript": "^3.9.2"
   },
   "directories": {
     "test": "test"
   },
-  "dependencies": {
-    "ts-test-functions": "0.0.4"
-  },
+  "dependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/marco74/peer_rpc.git"
