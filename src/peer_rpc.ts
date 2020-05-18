@@ -110,6 +110,7 @@ class remote_procedure_call extends eventemmitter {
 			f = fname;
 			fname = f.name;
 		}
+		this.function_register = this.function_register || {};
 		this.function_register[fname] = f;
 		super.emit("register_function", fname, f);
 	};
