@@ -1,6 +1,6 @@
 {
   "name": "peer_rpc",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "dist/index.cjs.js",
   "module": "dist/index.es.js",
@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc && rollup -c",
-    "test": "mocha --reporter spec --require ts-node/register test/*.ts"
+    "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' mocha --reporter spec --require ts-node/register test/*.ts"
   },
   "keywords": [],
   "author": "Marco Fleckinger <marco.fleckinger@gmail.com",

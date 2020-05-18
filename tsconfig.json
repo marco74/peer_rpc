@@ -4,7 +4,7 @@
 		"declaration":true,
 		"declarationDir": "./dist",
 		"module":"ES2015", //never ever change this!!
-		                   //build process does not work properly with different value
+		                   //build process needs this to be es2015 does not work properly with different value
 		"noImplicitAny": true,
 		"outDir":"./tsc-build",
 		"strict":true
