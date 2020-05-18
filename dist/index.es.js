@@ -9,17 +9,29 @@ function generate_id(pattern, l = 10) {
         }
     }, '');
 }
-function create_promise_object() {
-    let obj = {};
-    obj.promise = new Promise((resolve, reject) => {
-        obj.resolve = resolve;
-        obj.reject = reject;
-    });
-    return obj;
+
+class eventemitter {
+    constructor() {
+        this.callbacks = {};
+    }
+    on(eventname, f) {
+        this.callbacks[eventname] = this.callbacks[eventname] || [];
+        this.callbacks[eventname].push(f);
+    }
+    off(eventname, f) {
+        this.callbacks[eventname] = this.callbacks[eventname] || [];
+        this.callbacks[eventname].filter(fn => fn != f);
+    }
+    emit(eventname, ...args) {
+        for (let f of this.callbacks[eventname] || []) {
+            f(...args);
+        }
+    }
 }
 
-class remote_procedure_call {
+class remote_procedure_call extends eventemitter {
     constructor(send_function) {
+        super();
         this.function_register = {};
         this.instances = {};
         this.sendfunction = send_function;
@@ -30,8 +42,22 @@ class remote_procedure_call {
      * @param {string} fname String under which function is registered
      */
     get_function(fname) {
-        this.function_register[fname] = this.function_register[fname] || create_promise_object();
-        return this.function_register[fname].promise;
+        if (fname in this.function_register) {
+            //function already registered
+            return Promise.resolve(this.function_register[fname]);
+        }
+        else {
+            //function not registered yet => wait for it
+            return new Promise((resolve) => {
+                let eventhandler = (name, f) => {
+                    if (name == fname) {
+                        this.off('register_function', eventhandler);
+                        resolve(f);
+                    }
+                };
+                this.on('register_function', eventhandler);
+            });
+        }
     }
     /**
      * serializes argument_list for use in remote call. All arguments get replaced by object
@@ -86,8 +112,21 @@ class remote_procedure_call {
             f = fname;
             fname = f.name;
         }
-        this.get_function(fname); // this ensure existence of function
-        this.function_register[fname].resolve(f);
+        this.function_register[fname] = f;
+        super.emit("register_function", fname, f);
+    }
+    ;
+    /**
+     * Register a function or a class for remote call.
+     *
+     * @param {string} fname name under which the function shall be registered
+     * @param {Function} f function that shall be registered
+     */
+    unregister_function(fname, f) {
+        if (this.function_register[fname] && this.function_register[fname] == f) {
+            delete this.function_register[fname];
+            super.emit("unregister_function", fname, f);
+        }
     }
     ;
     /**
@@ -116,7 +155,6 @@ class remote_procedure_call {
     call(call_string) {
         let [action, fname, argument_array] = JSON.parse(call_string);
         let args = this.deserialize_arguments(argument_array);
-        // console.log(`\t\t\t* fname = '${fname}', argument_array=`, argument_array);
         if (action == 'call') {
             let m = fname.match(/(.+)\.(.+)/);
             if (m) {

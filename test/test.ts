@@ -22,6 +22,27 @@ describe("rpc", () => {
 				.then(() => rpc1.call(arg));
 		});
 	});
+	describe('register_function', () => {
+		it("shall emit event 'register'", () => {
+			let ob = new observer();
+			let foo = () => {};
+			rpc1.on('register_function', ob.fake());
+			rpc1.register_function('foo', foo);
+			assert(ob.calledoncewith('foo', foo));
+		});
+	});
+
+	describe('unregister_function', () => {
+		it("shall emit event 'unregister'", () => {
+			let ob = new observer();
+			let foo = () => {};
+			rpc1.on('unregister_function', ob.fake());
+			rpc1.register_function('foo', foo);
+			rpc1.unregister_function('foo', foo);
+			assert(ob.calledoncewith('foo', foo));
+		});
+	})
+
 	describe("call_function", () => {
 		it('should simply call remote function', () => {
 			let ob = new observer();

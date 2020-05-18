@@ -1,4 +1,5 @@
-declare class remote_procedure_call {
+import eventemmitter from './ee';
+declare class remote_procedure_call extends eventemmitter {
     constructor(send_function: Function);
     private function_register;
     private instances;
@@ -32,6 +33,13 @@ declare class remote_procedure_call {
      * @param {Function} f function that shall be registered
      */
     register_function(fname: any, f: any): void;
+    /**
+     * Register a function or a class for remote call.
+     *
+     * @param {string} fname name under which the function shall be registered
+     * @param {Function} f function that shall be registered
+     */
+    unregister_function(fname: any, f: any): void;
     /**
      * Call a function on remote side. The function call is serialized and
      * the registered send function invoked.

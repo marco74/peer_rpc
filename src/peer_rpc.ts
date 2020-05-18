@@ -1,7 +1,10 @@
-import {create_promise_object, generate_id} from './helper';
+import {generate_id} from './helper';
+import eventemmitter from './ee'
+import {genericfunction} from './ee';
 
-class remote_procedure_call {
+class remote_procedure_call extends eventemmitter {
 	constructor (send_function:Function) {
+		super();
 		this.sendfunction = send_function
 	}
 	private function_register:{
@@ -23,8 +26,25 @@ class remote_procedure_call {
 	 * @param {string} fname String under which function is registered
 	 */
 	private get_function (fname:string):Promise<any> {
-		this.function_register[fname] = this.function_register[fname] || create_promise_object();
-		return this.function_register[fname].promise;
+		if (fname in this.function_register) {
+
+			//function already registered
+			return Promise.resolve(this.function_register[fname]);
+		
+		} else {
+		
+			//function not registered yet => wait for it
+			return new Promise((resolve) => {
+				let eventhandler = (name:string, f:genericfunction) => {
+					if (name == fname) {
+						this.off('register_function', eventhandler);
+						resolve(f);
+					}
+				};
+				this.on('register_function', eventhandler);
+			});
+		
+		}
 	}
 	
 	/**
@@ -86,10 +106,24 @@ class remote_procedure_call {
 			f = fname;
 			fname = f.name;
 		}
-		this.get_function(fname);  // this ensure existence of function
-		this.function_register[fname].resolve(f);
+		this.function_register[fname] = f;
+		super.emit("register_function", fname, f);
+	};
+
+	/**
+	 * Register a function or a class for remote call.
+	 * 
+	 * @param {string} fname name under which the function shall be registered
+	 * @param {Function} f function that shall be registered
+	 */
+	public unregister_function (fname:any, f:any) {
+		if (this.function_register[fname] && this.function_register[fname] == f) {
+			delete this.function_register[fname];
+			super.emit("unregister_function", fname, f);
+		}
 	};
 	
+
 	/**
 	 * Call a function on remote side. The function call is serialized and
 	 * the registered send function invoked.
@@ -117,7 +151,6 @@ class remote_procedure_call {
 	public call (call_string:string) {
 		let [action, fname, argument_array] = JSON.parse(call_string);
 		let args = this.deserialize_arguments(argument_array);
-		// console.log(`\t\t\t* fname = '${fname}', argument_array=`, argument_array);
 		if (action == 'call') {
 			let m:[string, string, string] = fname.match(/(.+)\.(.+)/);
 			if (m) {
