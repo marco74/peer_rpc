@@ -2,6 +2,11 @@ import {generate_id} from './helper';
 import eventemmitter from './ee'
 import {genericfunction} from './ee';
 
+type argument_type = {
+	type:string,
+	value:any
+}
+
 class remote_procedure_call extends eventemmitter {
 	constructor (send_function:Function) {
 		super();
@@ -54,13 +59,9 @@ class remote_procedure_call extends eventemmitter {
 	 *  
 	 * @param {Array} argument_list argument list to serialize
 	 */
-	private serialize_arguments (argument_list:object[]):object[] {
-		interface argument {
-			type:string,
-			value:any
-		}
+	private serialize_arguments (argument_list:object[]):argument_type[] {
 		return argument_list.map((value) => {
-			let result:argument = {
+			let result:argument_type = {
 				type:typeof value,
 				value
 			};
@@ -79,7 +80,7 @@ class remote_procedure_call extends eventemmitter {
 	 * 
 	 * @returns deserialized arguments
 	 */
-	private deserialize_arguments (argument_array:any[]) {
+	private deserialize_arguments (argument_array:any[]):any[] {
 		return argument_array
 			.map(({type, value}) => {
 				if (type == 'function') {
@@ -101,7 +102,7 @@ class remote_procedure_call extends eventemmitter {
 	 * @param {string} fname name under which the function shall be registered
 	 * @param {Function} f function that shall be registered
 	 */
-	public register_function (fname:any, f:any) {
+	public register_function (fname:any, f:any):void {
 		if ((typeof f == 'undefined') && fname instanceof Function) {
 			f = fname;
 			fname = f.name;
@@ -116,12 +117,21 @@ class remote_procedure_call extends eventemmitter {
 	 * @param {string} fname name under which the function shall be registered
 	 * @param {Function} f function that shall be registered
 	 */
-	public unregister_function (fname:any, f:any) {
+	public unregister_function (fname:any, f:any):void {
 		if (this.function_register[fname] && this.function_register[fname] == f) {
 			delete this.function_register[fname];
 			super.emit("unregister_function", fname, f);
 		}
 	};
+	
+	/**
+	 * Unregisteres all functions
+	 */
+	public unregister_all():void {
+		for (let fname in this.function_register) {
+			this.unregister_function(fname, this.function_register[fname]);
+		}
+	}
 	
 
 	/**

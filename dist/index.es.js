@@ -130,6 +130,14 @@ class remote_procedure_call extends eventemitter {
     }
     ;
     /**
+     * Unregisteres all functions
+     */
+    unregister_all() {
+        for (let fname in this.function_register) {
+            this.unregister_function(fname, this.function_register[fname]);
+        }
+    }
+    /**
      * Call a function on remote side. The function call is serialized and
      * the registered send function invoked.
      *

@@ -43,6 +43,21 @@ describe("rpc", () => {
 		});
 	})
 
+	describe('unregister_all', () => {
+		it("shall unregister all registered functions", () => {
+			let ob = new observer();
+			let foo = () => {};
+			let bar = () => {};
+			rpc1.register_function('foo', foo);
+			rpc1.register_function('bar', bar);
+			rpc1.on('unregister_function', ob.fake());
+			rpc1.unregister_all();
+			assert(ob.callcount() == 2);
+			assert.deepEqual(ob.call(0), ['foo', foo]);
+			assert.deepEqual(ob.call(1), ['bar', bar]);
+		});
+	})
+
 	describe("call_function", () => {
 		it('should simply call remote function', () => {
 			let ob = new observer();

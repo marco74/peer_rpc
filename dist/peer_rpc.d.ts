@@ -41,6 +41,10 @@ declare class remote_procedure_call extends eventemmitter {
      */
     unregister_function(fname: any, f: any): void;
     /**
+     * Unregisteres all functions
+     */
+    unregister_all(): void;
+    /**
      * Call a function on remote side. The function call is serialized and
      * the registered send function invoked.
      *
