@@ -17,14 +17,17 @@ class eventemitter {
         this.callbacks = {};
     }
     on(eventname, f) {
+        this.callbacks = this.callbacks || {};
         this.callbacks[eventname] = this.callbacks[eventname] || [];
         this.callbacks[eventname].push(f);
     }
     off(eventname, f) {
+        this.callbacks = this.callbacks || {};
         this.callbacks[eventname] = this.callbacks[eventname] || [];
         this.callbacks[eventname].filter(fn => fn != f);
     }
     emit(eventname, ...args) {
+        this.callbacks = this.callbacks || {};
         for (let f of this.callbacks[eventname] || []) {
             f(...args);
         }
