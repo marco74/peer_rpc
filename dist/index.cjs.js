@@ -34,6 +34,12 @@ class eventemitter {
 class remote_procedure_call extends eventemitter {
     constructor(send_function) {
         super();
+        // private function_register:{
+        // [fname:string]:{
+        // promise:any;
+        // resolve:Function;
+        // }
+        // } = {};
         this.function_register = {};
         this.instances = {};
         this.sendfunction = send_function;

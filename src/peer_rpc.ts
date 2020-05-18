@@ -12,11 +12,14 @@ class remote_procedure_call extends eventemmitter {
 		super();
 		this.sendfunction = send_function
 	}
-	private function_register:{
-		[fname:string]:{
-			promise:any;
-			resolve:Function;
-		}
+	// private function_register:{
+		// [fname:string]:{
+			// promise:any;
+			// resolve:Function;
+		// }
+	// } = {};
+	private function_register: {
+		[fname:string]: genericfunction
 	} = {};
 	private instances:{
 		[instance_id:string]:{
