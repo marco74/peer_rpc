@@ -99,13 +99,8 @@ class remote_procedure_call extends eventemitter {
         return argument_array
             .map(({ type, value }) => {
             if (type == 'function') {
-                return (...args) => {
-                    return this.sendfunction(JSON.stringify([
-                        'call',
-                        value,
-                        this.serialize_arguments(args)
-                    ]));
-                };
+                //wrapper function that calls original function remotely:
+                return (...args) => this.call_function(value, args);
             }
             return value;
         });
@@ -147,6 +142,30 @@ class remote_procedure_call extends eventemitter {
             this.unregister_function(fname, this.function_register[fname]);
         }
     }
+    remote_call(action, fname, ...args) {
+        let call_id = generate_id('xxxxxxxxxx', 36);
+        let obj;
+        let f = (action, ...args) => {
+            obj[action](...args);
+        };
+        return Promise.resolve()
+            .then(() => {
+            return new Promise((resolve, reject) => {
+                obj = { resolve, reject };
+                this.register_function(call_id, f);
+                this.sendfunction(JSON.stringify([
+                    action,
+                    call_id,
+                    fname,
+                    this.serialize_arguments(args)
+                ]));
+            });
+        })
+            .then((res) => {
+            this.unregister_function(call_id, f);
+            return res;
+        });
+    }
     /**
      * Call a function on remote side. The function call is serialized and
      * the registered send function invoked.
@@ -157,11 +176,7 @@ class remote_procedure_call extends eventemitter {
      * @returns result of the sendfunction
      */
     call_function(fname, ...args) {
-        return this.sendfunction(JSON.stringify([
-            'call',
-            fname,
-            this.serialize_arguments(args)
-        ]));
+        return this.remote_call('call', fname, ...args);
     }
     /**
      * deserializes function call string and executes function or instantiates class
@@ -171,49 +186,59 @@ class remote_procedure_call extends eventemitter {
      * @returns Promise that resolves with function call's result
      */
     call(call_string) {
-        let [action, fname, argument_array] = JSON.parse(call_string);
-        let args = this.deserialize_arguments(argument_array);
-        if (action == 'call') {
-            let m = fname.match(/(.+)\.(.+)/);
-            if (m) {
-                let [, instancename, methodname] = m;
-                return Promise.resolve(this.instances[instancename].instance)
-                    .then((instance) => {
-                    return instance[methodname](...args);
-                });
+        let function_call = JSON.parse(call_string);
+        let [action] = function_call.splice(0, 1);
+        let params = this.deserialize_arguments(function_call.pop());
+        let [call_id, fname] = function_call;
+        let acknowledge = (result_type, result) => {
+            if (action == 'call' || action == 'instantiate') {
+                return this.sendfunction(JSON.stringify([
+                    result_type,
+                    call_id,
+                    fname,
+                    this.serialize_arguments([result])
+                ]));
             }
-            else {
-                return this.get_function(fname).then(f => f(...args));
+        };
+        return Promise.resolve()
+            .then(() => {
+            switch (action) {
+                case 'call':
+                    return this.get_function(fname).then(f => f(...params));
+                case 'instantiate':
+                    return this.get_function(fname)
+                        .then((f) => {
+                        let instance = new f(...params);
+                        let instance_id = generate_id('xxxxxxxxxx', 36);
+                        this.instances[instance_id] = { instance };
+                        let result = {
+                            instance_id: '',
+                            properties: []
+                        };
+                        let prop_handler = (name) => {
+                            let prop = instance[name];
+                            let prop_wrapper = (...args) => prop instanceof Function ? prop(...args) : prop;
+                            let wrapper_id = generate_id('xxxxxxxxxx', 36);
+                            this.register_function(wrapper_id, prop_wrapper);
+                            result.properties.push({ name, wrapper_id });
+                        };
+                        Object.keys(instance)
+                            .forEach(prop_handler);
+                        Object.getOwnPropertyNames(f.prototype)
+                            .forEach((name) => {
+                            if (name != 'constructor') {
+                                prop_handler(name);
+                            }
+                        });
+                        return result;
+                    });
+                case 'resolve':
+                case 'reject':
+                    return this.get_function(call_id)
+                        .then(f => f(action, ...params));
             }
-        }
-        if (action == 'instantiate') {
-            return this.get_function(fname)
-                .then((f) => {
-                let instance = new f(...this.deserialize_arguments(argument_array));
-                let instance_id = generate_id('xxxxxxxxxx', 36);
-                this.instances[instance_id] = { instance };
-                let result = {
-                    instance_id,
-                    properties: []
-                };
-                let prop_handler = (name) => {
-                    let prop = instance[name];
-                    let prop_wrapper = (...args) => prop instanceof Function ? prop(...args) : prop;
-                    let wrapper_id = generate_id('xxxxxxxxxx', 36);
-                    this.register_function(wrapper_id, prop_wrapper);
-                    result.properties.push({ name, wrapper_id });
-                };
-                Object.keys(instance)
-                    .forEach(prop_handler);
-                Object.getOwnPropertyNames(f.prototype)
-                    .forEach((name) => {
-                    if (name != 'constructor') {
-                        prop_handler(name);
-                    }
-                });
-                return result;
-            });
-        }
+        })
+            .then((result) => acknowledge('resolve', result), (result) => acknowledge('reject', result));
     }
     /**
      * instatiate a class registered on remote side
@@ -225,11 +250,7 @@ class remote_procedure_call extends eventemitter {
      *          with wrapper class that calls remote props
      */
     instantiate_class(fname, ...args) {
-        return this.sendfunction(JSON.stringify([
-            'instantiate',
-            fname,
-            this.serialize_arguments(args)
-        ]))
+        return this.remote_call('instantiate', fname, ...args)
             .then(({ properties }) => {
             return properties.reduce((obj, { name, wrapper_id }) => {
                 obj[name] = (...args) => {

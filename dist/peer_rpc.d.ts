@@ -44,6 +44,7 @@ declare class remote_procedure_call extends eventemmitter {
      * Unregisteres all functions
      */
     unregister_all(): void;
+    private remote_call;
     /**
      * Call a function on remote side. The function call is serialized and
      * the registered send function invoked.
@@ -61,7 +62,7 @@ declare class remote_procedure_call extends eventemmitter {
      *
      * @returns Promise that resolves with function call's result
      */
-    call(call_string: string): Promise<any> | undefined;
+    call(call_string: string): Promise<any>;
     /**
      * instatiate a class registered on remote side
      *
@@ -71,7 +72,7 @@ declare class remote_procedure_call extends eventemmitter {
      * @returns Promise that will be resolved after remote instatiation was successful
      *          with wrapper class that calls remote props
      */
-    instantiate_class(fname: string, ...args: any[]): any;
+    instantiate_class(fname: string, ...args: any[]): Promise<any>;
     /**
      * wraps a function. When result gets called, local and remote function get called.
      *
