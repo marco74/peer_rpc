@@ -61,12 +61,21 @@ describe("rpc", () => {
 	describe("call_function", () => {
 		it('should simply call remote function', () => {
 			let ob = new observer();
-			rpc2.register_function('a', ob.fake(42));
+			rpc2.register_function('a', ob.fake());
 			return rpc1.call_function('a', 1, 2, 3)
 				.then((res) => {
 					assert(ob.calledoncewith(1, 2, 3));
+				})
+		});
+
+		it('should return value of called function', () => {
+			let ob = new observer();
+			rpc2.register_function('a', ob.fake(42));
+			return rpc1.call_function('a', 1, 2, 3)
+				.then((res) => {
 					assert(res == 42);
 				})
+
 		});
 
 		it("should allow callbacks as arguments", () => {
