@@ -1,6 +1,6 @@
 {
   "name": "peer_rpc",
-  "version": "1.0.9",
+  "version": "1.0.11",
   "description": "",
   "main": "dist/index.cjs.js",
   "module": "dist/index.es.js",
