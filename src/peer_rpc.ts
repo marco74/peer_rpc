@@ -240,6 +240,7 @@ class remote_procedure_call extends eventemmitter {
 										}
 									});
 								
+								this.emit('instantiate', instance, instance_id);
 								return result;
 							});
 						case 'resolve':

@@ -196,5 +196,14 @@ describe("rpc", () => {
 					assert(diff_type == 'diff');
 				});
 		});
+		it("should emit event 'instantiate' locally", () => {
+			return new Promise((resolve) => {
+				rpc1.on('instantiate', (instance, instance_id) => {
+					assert(instance instanceof sum);
+					resolve();
+				})
+				rpc2.instantiate_class('sum');
+			});
+		});
 	});
 });
