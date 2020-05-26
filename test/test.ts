@@ -23,13 +23,22 @@ describe("rpc", () => {
 		});
 	});
 	describe('register_function', () => {
-		it("shall emit event 'register'", () => {
+		it("shall emit event 'register' locally", () => {
 			let ob = new observer();
 			let foo = () => {};
 			rpc1.on('register_function', ob.fake());
 			rpc1.register_function('foo', foo);
 			assert(ob.calledoncewith('foo', foo));
 		});
+		it ("shall emit event 'remote_registered_function remotely", () => {
+			return new Promise((resolve) => {
+				rpc2.on('remote_registered_function', (fname) => {
+					assert(fname == 'foo');
+					resolve();
+				});
+			});
+		});
+
 	});
 
 	describe('unregister_function', () => {
@@ -40,6 +49,14 @@ describe("rpc", () => {
 			rpc1.register_function('foo', foo);
 			rpc1.unregister_function('foo', foo);
 			assert(ob.calledoncewith('foo', foo));
+		});
+		it("shall emit event 'remote_unregistered_function remotely", () => {
+			return new Promise((resolve) => {
+				rpc2.on('remote_unregistered_function', (fname) => {
+					assert(fname == 'foo');
+					resolve();
+				});
+			});
 		});
 	})
 

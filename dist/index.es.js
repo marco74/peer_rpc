@@ -119,6 +119,12 @@ class remote_procedure_call extends eventemitter {
         this.function_register = this.function_register || {};
         this.function_register[fname] = f;
         super.emit("register_function", fname, f);
+        this.sendfunction(JSON.stringify([
+            'registered',
+            null,
+            null,
+            this.serialize_arguments([fname])
+        ]));
     }
     ;
     /**
@@ -132,6 +138,12 @@ class remote_procedure_call extends eventemitter {
             delete this.function_register[fname];
             super.emit("unregister_function", fname, f);
         }
+        this.sendfunction(JSON.stringify([
+            'unregistered',
+            null,
+            null,
+            this.serialize_arguments([fname])
+        ]));
     }
     ;
     /**
@@ -236,6 +248,12 @@ class remote_procedure_call extends eventemitter {
                 case 'reject':
                     return this.get_function(call_id)
                         .then(f => f(action, ...params));
+                case 'registered':
+                    super.emit('remote_registered_function', params[0]);
+                    return Promise.resolve();
+                case 'unregistered':
+                    super.emit('remote_unregistered_function', params[0]);
+                    return Promise.resolve();
             }
         })
             .then((result) => acknowledge('resolve', result), (result) => acknowledge('reject', result));
