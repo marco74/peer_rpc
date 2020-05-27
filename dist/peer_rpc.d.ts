@@ -44,6 +44,7 @@ declare class remote_procedure_call extends eventemmitter {
      * Unregisteres all functions
      */
     unregister_all(): void;
+    private calls;
     private remote_call;
     /**
      * Call a function on remote side. The function call is serialized and
@@ -82,5 +83,11 @@ declare class remote_procedure_call extends eventemmitter {
      * @returns function that returns promise with results of local ad remote call.
      */
     wrap_function(f: Function, fname: string): (...args: any[]) => Promise<[any, any]>;
+    /**
+     * rejects all function calls
+     *
+     * @param reason reason why to reject all
+     */
+    reject_all(reason: any): void;
 }
 export default remote_procedure_call;

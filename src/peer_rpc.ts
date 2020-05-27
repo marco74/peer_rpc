@@ -1,5 +1,6 @@
 import {generate_id} from './helper';
 import eventemmitter from './ee'
+import promise_register from './promise_register';
 import {genericfunction} from './ee';
 
 type argument_type = {
@@ -12,12 +13,6 @@ class remote_procedure_call extends eventemmitter {
 		super();
 		this.sendfunction = send_function
 	}
-	// private function_register:{
-		// [fname:string]:{
-			// promise:any;
-			// resolve:Function;
-		// }
-	// } = {};
 	private function_register: {
 		[fname:string]: genericfunction
 	} = {};
@@ -143,30 +138,19 @@ class remote_procedure_call extends eventemmitter {
 			this.unregister_function(fname, this.function_register[fname]);
 		}
 	}
-	
+
+	private calls = new promise_register();
+
 	private remote_call(action:string, fname:string, ...args:any[]):Promise<any> {
 		let call_id = generate_id('xxxxxxxxxx', 36);
-		let obj:{[key:string]: genericfunction};
-		let f = (action:string, ...args:any[]) => {
-			obj[action](...args);
-		};
-		return Promise.resolve()
-			.then(()=> {
-				return new Promise((resolve, reject) => {
-					obj = {resolve, reject};
-					this.register_function(call_id, f);
-					this.sendfunction(JSON.stringify([
-						action,
-						call_id,
-						fname,
-						this.serialize_arguments(args)
-					]));
-				});
-			})
-			.then((res) => {
-				this.unregister_function(call_id, f);
-				return res;
-			})
+		let result = this.calls.new_promise(call_id);
+		this.sendfunction(JSON.stringify([
+			action,
+			call_id,
+			fname,
+			this.serialize_arguments(args)
+		]));
+		return result;
 	}
 
 	/**
@@ -244,9 +228,9 @@ class remote_procedure_call extends eventemmitter {
 								return result;
 							});
 						case 'resolve':
+							return this.calls.resolve(call_id, ...params);
 						case 'reject':
-							return this.get_function(call_id)
-								.then(f => f(action, ...params));
+							return this.calls.reject(call_id, ...params);
 						case 'registered':
 							super.emit('remote_registered_function', params[0]);
 							return Promise.resolve();
@@ -299,6 +283,15 @@ class remote_procedure_call extends eventemmitter {
 				this.call_function(fname, ...args)
 			]);
 		}
+	}
+
+	/**
+	 * rejects all function calls
+	 * 
+	 * @param reason reason why to reject all
+	 */
+	public reject_all(reason:any):void {
+		this.calls.reject_all(reason);
 	}
 	
 }

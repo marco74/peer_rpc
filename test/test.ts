@@ -206,4 +206,13 @@ describe("rpc", () => {
 			});
 		});
 	});
+	describe("reject_all", () => {
+		it("should reject all function calls", () => {
+			const p = rpc1.call_function('x', 3);
+			rpc1.reject_all('reason');
+			return p.catch((reason) => {
+				assert(reason == 'reason');
+			})
+		});
+	})
 });

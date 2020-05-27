@@ -34,17 +34,76 @@ class eventemitter {
     }
 }
 
+class promise_register {
+    constructor() {
+        this.promises = {};
+    }
+    /**
+     * resolve the registered promise specified by an id
+     *
+     * @param id id of the promise to resolve
+     * @param args arguments to resolve with
+     */
+    resolve(id, ...args) {
+        if (id in this.promises) {
+            this.promises[id].resolve(...args);
+        }
+        else {
+            throw new Error(`promise ${id} not found`);
+        }
+    }
+    /**
+     * reject the registered promise specified by an id
+     *
+     * @param id id of the promise to reject
+     * @param args arguments to reject with
+     */
+    reject(id, ...args) {
+        if (id in this.promises) {
+            this.promises[id].reject(...args);
+        }
+        else {
+            throw new Error(`promise ${id} not found`);
+        }
+    }
+    /**
+     * reject all promises
+     *
+     * @param args arguments to reject with
+     */
+    reject_all(...reason) {
+        Object.values(this.promises)
+            .forEach(({ reject }) => reject(...reason));
+    }
+    /**
+     * create a new promise under the specified id
+     * @param id id of the new promise
+     *
+     * @returns the new promise
+     */
+    new_promise(id) {
+        if (id in this.promises) {
+            throw new Error(`id '${id}' already used`);
+        }
+        this.promises[id] = {
+            promise: new Promise(() => { }),
+            resolve: () => { },
+            reject: () => { }
+        };
+        this.promises[id].promise = new Promise((resolve, reject) => {
+            this.promises[id].resolve = resolve;
+            this.promises[id].reject = reject;
+        });
+        return this.promises[id].promise;
+    }
+}
+
 class remote_procedure_call extends eventemitter {
     constructor(send_function) {
         super();
-        // private function_register:{
-        // [fname:string]:{
-        // promise:any;
-        // resolve:Function;
-        // }
-        // } = {};
         this.function_register = {};
         this.instances = {};
+        this.calls = new promise_register();
         this.sendfunction = send_function;
     }
     /**
@@ -158,27 +217,14 @@ class remote_procedure_call extends eventemitter {
     }
     remote_call(action, fname, ...args) {
         let call_id = generate_id('xxxxxxxxxx', 36);
-        let obj;
-        let f = (action, ...args) => {
-            obj[action](...args);
-        };
-        return Promise.resolve()
-            .then(() => {
-            return new Promise((resolve, reject) => {
-                obj = { resolve, reject };
-                this.register_function(call_id, f);
-                this.sendfunction(JSON.stringify([
-                    action,
-                    call_id,
-                    fname,
-                    this.serialize_arguments(args)
-                ]));
-            });
-        })
-            .then((res) => {
-            this.unregister_function(call_id, f);
-            return res;
-        });
+        let result = this.calls.new_promise(call_id);
+        this.sendfunction(JSON.stringify([
+            action,
+            call_id,
+            fname,
+            this.serialize_arguments(args)
+        ]));
+        return result;
     }
     /**
      * Call a function on remote side. The function call is serialized and
@@ -244,12 +290,13 @@ class remote_procedure_call extends eventemitter {
                                 prop_handler(name);
                             }
                         });
+                        this.emit('instantiate', instance, instance_id);
                         return result;
                     });
                 case 'resolve':
+                    return this.calls.resolve(call_id, ...params);
                 case 'reject':
-                    return this.get_function(call_id)
-                        .then(f => f(action, ...params));
+                    return this.calls.reject(call_id, ...params);
                 case 'registered':
                     super.emit('remote_registered_function', params[0]);
                     return Promise.resolve();
@@ -296,6 +343,14 @@ class remote_procedure_call extends eventemitter {
                 this.call_function(fname, ...args)
             ]);
         };
+    }
+    /**
+     * rejects all function calls
+     *
+     * @param reason reason why to reject all
+     */
+    reject_all(reason) {
+        this.calls.reject_all(reason);
     }
 }
 
