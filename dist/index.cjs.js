@@ -99,12 +99,16 @@ class promise_register {
 }
 
 class remote_procedure_call extends eventemitter {
-    constructor(send_function) {
+    constructor(send_function, mystr) {
         super();
         this.function_register = {};
         this.instances = {};
         this.calls = new promise_register();
         this.sendfunction = send_function;
+        this.mystr = mystr || '';
+    }
+    toString() {
+        return this.mystr;
     }
     /**
      * get the registered function
@@ -161,7 +165,10 @@ class remote_procedure_call extends eventemitter {
             .map(({ type, value }) => {
             if (type == 'function') {
                 //wrapper function that calls original function remotely:
-                return (...args) => this.call_function(value, args);
+                return (...args) => {
+                    return Promise.resolve()
+                        .then(() => this.call_function(value, ...args));
+                };
             }
             return value;
         });
@@ -264,7 +271,8 @@ class remote_procedure_call extends eventemitter {
             .then(() => {
             switch (action) {
                 case 'call':
-                    return this.get_function(fname).then(f => f(...params));
+                    return this.get_function(fname)
+                        .then((f) => f(...params));
                 case 'instantiate':
                     return this.get_function(fname)
                         .then((f) => {
@@ -277,7 +285,9 @@ class remote_procedure_call extends eventemitter {
                         };
                         let prop_handler = (name) => {
                             let prop = instance[name];
-                            let prop_wrapper = (...args) => prop instanceof Function ? prop(...args) : prop;
+                            let prop_wrapper = (...args) => prop instanceof Function ?
+                                prop.call(instance, ...args) :
+                                prop;
                             let wrapper_id = generate_id('xxxxxxxxxx', 36);
                             this.register_function(wrapper_id, prop_wrapper);
                             result.properties.push({ name, wrapper_id });

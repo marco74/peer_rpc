@@ -9,10 +9,16 @@ type argument_type = {
 }
 
 class remote_procedure_call extends eventemmitter {
-	constructor (send_function:Function) {
+	private mystr:string;
+	constructor (send_function:Function, mystr?:string) {
 		super();
 		this.sendfunction = send_function
+		this.mystr = mystr || '';
 	}
+	toString() {
+		return this.mystr;
+	}
+
 	private function_register: {
 		[fname:string]: genericfunction
 	} = {};
@@ -83,7 +89,10 @@ class remote_procedure_call extends eventemmitter {
 			.map(({type, value}) => {
 				if (type == 'function') {
 					//wrapper function that calls original function remotely:
-					return (...args: any[]) => this.call_function(value,args);
+					return (...args: any[]) => {
+						return Promise.resolve()
+							.then(() => this.call_function(value,...args));
+					};
 				}
 				return value;
 			});
@@ -194,7 +203,9 @@ class remote_procedure_call extends eventemmitter {
 			.then(() => {
 				switch (action) {
 					case 'call':
-						return this.get_function(fname).then(f => f(...params));
+						return this.get_function(fname)
+							.then((f) => f(...params));
+
 					case 'instantiate':
 						return this.get_function(fname)
 							.then((f) => {
@@ -209,7 +220,9 @@ class remote_procedure_call extends eventemmitter {
 		
 								let prop_handler = (name:string) => {
 									let prop = instance[name];
-									let prop_wrapper = (...args:any[]) => prop instanceof Function ? prop(...args) : prop;
+									let prop_wrapper = (...args:any[]) => prop instanceof Function ?
+										prop.call(instance, ...args) :
+										prop;
 									let wrapper_id = generate_id('xxxxxxxxxx', 36);
 									this.register_function(wrapper_id, prop_wrapper);
 									result.properties.push({name, wrapper_id});

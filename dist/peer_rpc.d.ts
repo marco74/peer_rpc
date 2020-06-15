@@ -1,6 +1,8 @@
 import eventemmitter from './ee';
 declare class remote_procedure_call extends eventemmitter {
-    constructor(send_function: Function);
+    private mystr;
+    constructor(send_function: Function, mystr?: string);
+    toString(): string;
     private function_register;
     private instances;
     private sendfunction;

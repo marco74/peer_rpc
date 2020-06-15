@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 import remote_procedure_call from '../src/peer_rpc';
 import observer from 'ts-test-functions';
+import eventemitter from '../src/ee';
 
 describe("rpc", () => {
 	let rpc1:remote_procedure_call;
@@ -13,14 +14,14 @@ describe("rpc", () => {
 					setTimeout(resolve, 5);
 				}))
 				.then(() => rpc2.call(arg));
-		});
+		}, 'rpc1');
 		rpc2 = new remote_procedure_call((arg:string) => {
 			return Promise.resolve()
 				.then(() => new Promise((resolve) => {
 					setTimeout(resolve, 2);
 				}))
 				.then(() => rpc1.call(arg));
-		});
+		}, 'rpc2');
 	});
 	describe('register_function', () => {
 		it("shall emit event 'register' locally", () => {
@@ -106,7 +107,7 @@ describe("rpc", () => {
 			});
 			return rpc1.call_function('b', 23, ob2.fake('fake'))
 				.then((res) => {
-					assert(ob2.callcount() == 1);
+					assert(ob2.calledoncewith(42));
 					assert(res == 45);
 				})
 		});
@@ -203,6 +204,35 @@ describe("rpc", () => {
 					resolve();
 				})
 				rpc2.instantiate_class('sum');
+			});
+		});
+		describe("callback called by an instance", () => {
+			beforeEach(() => {
+				class a {
+					private cbfunction:Function = () => {}
+					on (eventname:string, f:Function) {
+						this.cbfunction = f;
+					}
+					emit_event(event:string, ...args:any[]) {
+						this.cbfunction('event1',41)
+					}
+				};
+				rpc1.register_function('a', a);
+			});
+			it("should be called with scalars rather than array", () => {
+				return new Promise((resolve) => {
+					rpc2.instantiate_class('a')
+						.then((instance_of_a) => {
+							instance_of_a.on('event1', (s:string, value:any) => {
+								assert.equal(s, 'event1');
+								assert.equal(value, 41);
+								resolve();
+							})
+								.then(() => {
+									instance_of_a.emit_event('event1', 42);
+								});
+						})
+				});
 			});
 		});
 	});
