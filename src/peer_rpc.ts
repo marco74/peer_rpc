@@ -5,7 +5,11 @@ import {genericfunction} from './ee';
 
 type argument_type = {
 	type:string,
-	value:any
+	value:any,
+}
+
+type dict = {
+	[key:string]:any
 }
 
 class remote_procedure_call extends eventemmitter {
@@ -73,6 +77,14 @@ class remote_procedure_call extends eventemmitter {
 				result.value = generate_id('xxxxxxxxxx', 36);
 				this.register_function (result.value, value);
 			}
+			if (value instanceof Error) {
+				result.type = 'Error';
+				result.value = {
+					stack:value.stack,
+					message:value.message,
+					name:value.name
+				};
+			}
 			return result;
 		});
 	}
@@ -93,6 +105,13 @@ class remote_procedure_call extends eventemmitter {
 						return Promise.resolve()
 							.then(() => this.call_function(value,...args));
 					};
+				}
+				if (type == 'Error') {
+					let e = new Error();
+					e.name = value.name;
+					e.message = value.message;
+					e.stack = value.stack;
+					return e;
 				}
 				return value;
 			});

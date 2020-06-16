@@ -123,6 +123,18 @@ describe("rpc", () => {
 				assert(ob.calledoncewith(1, 2, 3));
 			});
 		});
+		it("should throw error from remote side", () => {
+			rpc2.register_function('a', () => {
+				throw new Error("Test Error");
+			});
+			let p = rpc1.call_function('a', 1, 2, 3);
+			return p
+				.catch((e) => {
+					assert.instanceOf(e, Error);
+					assert.equal(e.name, "Error");
+					assert.equal(e.message, "Test Error");
+				});
+		})
 	});
 
 	describe("wrap_function", () => {
